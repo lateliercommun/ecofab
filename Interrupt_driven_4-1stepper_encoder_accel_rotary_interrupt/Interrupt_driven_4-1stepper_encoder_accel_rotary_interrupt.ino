@@ -15,17 +15,17 @@
 #define WINDER_MAX_PIN  57  
 #define WINDER_MIN_PIN  1
 
-// Motor PULLER : X sur ramps 1.4
+// PULLER motor1 : X on ramps 1.4
 #define MOTOR1_STEP_ENA 38               // enable pin
 #define MOTOR1_STEP_CLK 54               // clock pin
 #define MOTOR1_STEP_DIR 55               // direction pin
 
-// Motor SLIDER : Y sur ramps 1.4
+// SLIDER motor3 : Y on ramps 1.4
 #define MOTOR3_STEP_ENA 56               // enable pin
 #define MOTOR3_STEP_CLK 60               // clock pin
 #define MOTOR3_STEP_DIR 61               // direction pin
 
-// Motor WINDER : Z sur ramps 1.4
+// WINDER motor2  : Z on ramps 1.4
 #define MOTOR2_STEP_ENA 62               // enable pin
 #define MOTOR2_STEP_CLK 46               // clock pin
 #define MOTOR2_STEP_DIR 48               // direction pin
@@ -76,13 +76,13 @@ uint32_t winder_speed = WINDER_MIN_SPEED;
 bool step_forward = true;
 int motorSpeed = 16;     //max puller speed
 
-#define WINDER_MAX_SPEED 20
 #define WINDER_MIN_SPEED 1
+#define WINDER_MAX_SPEED 20
 #define MAX_MOTOR3_POSITION 4000
 #define MOTOR2_STEP_PER_TURN    (200 * 2 * 32)
 #define MOTOR3_STEP ((200 * 32) /8)  //(200 * 32)  //1tour
 
-// Parameter pour moteur asservi en position
+// Parameter for AccelStepper library
 AccelStepper stepper;
 
 // Encoder parameters
@@ -96,79 +96,37 @@ bool clkLast  = HIGH;
 bool swState  = HIGH;
 bool swLast  = HIGH;
 
-RotaryEncoder *encoder = nullptr;
+RotaryEncoder * encoder = nullptr;
 
 void checkPosition(){
     if (encoder != nullptr)
       encoder->tick(); // just call tick() to check the state.
 }
-  
-void initRotary (){
-  pinMode(clkPin,INPUT);
-  pinMode(dtPin,INPUT);
-  pinMode(swPin,INPUT_PULLUP);
-  encoder = new RotaryEncoder(clkPin, dtPin, RotaryEncoder::LatchMode::FOUR0);
-  attachInterrupt(digitalPinToInterrupt(clkPin), checkPosition, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(dtPin), checkPosition, CHANGE);
-}
-  
-int readRotary() { /* function readRotary */
-  ////Test routine for Rotary
-  // gestion position
-  clkState = digitalRead(clkPin);
-  if ((clkLast == LOW) && (clkState == HIGH)) {//rotary moving
-   //Serial.print("Rotary position ");
-   if (digitalRead(dtPin) == HIGH) {
-     rotVal = rotVal - 1;
-     if ( rotVal < minrotary ) {
-       rotVal = minrotary;
-     }
-   }
-   else {
-     rotVal++;
-     if ( rotVal > maxrotary ) {
-       rotVal = maxrotary;
-     }
-   }
-   //Serial.println(rotVal);
-   delay(200);
-  }
-  clkLast = clkState;
-  //gestion bouton
-  swState = digitalRead(swPin);
-  if (swState == LOW && swLast == HIGH) {
-   Serial.println("Rotary pressed");
-   delay(100);//debounce
-  }
-  swLast = swState;
-  return (rotVal);
-}
-
-// fin encoder
 
 uint32_t timewinder = 0;
 
-void HandleWinderSpeed (){
+// Function that manages the speed of winder motor2
+void HandleWinderSpeed(){
   if(millis ()- timewinder > 10)
   {
-    if(digitalRead (WINDER_MAX_PIN) ==HIGH)
+    if(digitalRead(WINDER_MAX_PIN) ==HIGH)
     {
-      //plus vite
+      //more speed
       if (winder_speed < WINDER_MAX_SPEED)
         winder_speed += 1;
     }
     
     if (digitalRead(WINDER_MIN_PIN) == HIGH)
     {
-      winder_speed = WINDER_MIN_SPEED;
-      
+      //less speed
+      winder_speed = WINDER_MIN_SPEED;     
     }
-    timewinder =millis();
+    timewinder = millis();
   }  
 }
 
-// gere la position du moteur 3 en fonction du moteur2
-void HandleMotor3 (){
+// Function that manages the position of slider (motor3) according to winder (moteur2)
+void HandleMotor3(){
   #if 0
     if (digitalRead(SLIDER_MAX_PIN) == HIGH || digitalRead(SLIDER_MIN_PIN)==HIGH)
     {
@@ -176,76 +134,51 @@ void HandleMotor3 (){
         stepper.moveTo(motor3_position); 
     }
   #endif    
-  if(digitalRead (SLIDER_MAX_PIN) == HIGH && motor3_dir > 0)
+  if(digitalRead(SLIDER_MAX_PIN) == HIGH && motor3_dir > 0)
   {
-      Serial.println ("slider motor on max");
+      Serial.println("slider motor on max");
       motor3_dir = -1;
       motor3_position = stepper.currentPosition() - MOTOR3_STEP;
-      stepper.moveTo (motor3_position);
-      Serial.print ("slider motor on position ");
-      Serial.println (stepper.currentPosition());
-  
+      stepper.moveTo(motor3_position);
+      Serial.print("slider motor on position ");
+      Serial.println(stepper.currentPosition());
   }
   
-  if(digitalRead (SLIDER_MIN_PIN) == HIGH && motor3_dir < 0)
+  if(digitalRead(SLIDER_MIN_PIN) == HIGH && motor3_dir < 0)
   {
-      Serial.println ("slider motor on min");
+      Serial.println("slider motor on min");
       motor3_dir = 1;
       motor3_position = stepper.currentPosition() + MOTOR3_STEP;
       stepper.moveTo (motor3_position);
-      Serial.print ("slider motor on position ");
-      Serial.println (stepper.currentPosition());
-  
+      Serial.print("slider motor on position ");
+      Serial.println(stepper.currentPosition()); 
   }  
   
-  //Serial.print ("slider motor on position ");
-  //Serial.println (stepper.currentPosition());
-  
-  if (motor2_step > MOTOR2_STEP_PER_TURN) 
-  {
-    //inverse le le sens du moteur si on touche un fin de course
-    
-    
-    if (motor3_dir > 0)
-    {
+  if (motor2_step > MOTOR2_STEP_PER_TURN) {
+    // Reverse the direction of the motor if you touch a limit switch 
+    if (motor3_dir > 0){
       motor3_position += MOTOR3_STEP;
     }
-    else
-    {
-      motor3_position -= MOTOR3_STEP;
-      
-    }
+    else{
+      motor3_position -= MOTOR3_STEP;  
+    }     
+    stepper.moveTo(motor3_position);
      
-     stepper.moveTo (motor3_position);
-     Serial.print ("slider motor go to position ");
-     Serial.print (motor3_dir);
-     Serial.print (" ");
-     Serial.println (motor3_position);
-  
-     noInterrupts();
-     motor2_step -= MOTOR2_STEP_PER_TURN;
-     interrupts ();
+    Serial.print("slider motor go to position ");
+    Serial.print(motor3_dir);
+    Serial.print(" ");
+    Serial.println(motor3_position);
+    
+    noInterrupts();
+    motor2_step -= MOTOR2_STEP_PER_TURN;
+    interrupts ();
  }
 }
 
 void setup(){
   Serial.begin(115200);
 
-  // init screen
-  display.begin(0X3C, true);   // initialisation de l'objet afficheur
-  display.clearDisplay();
-  display.display ();
-  display.drawPixel(10, 10, SH110X_WHITE);
-  for (int x = 8; x < 120; x++)
-    display.drawPixel(x, 20, SH110X_WHITE);
-  display.fillRect (24, 24, 64, 64, SH110X_WHITE);
-  display.setCursor (24, 2);
-  display.setTextColor (SH110X_WHITE);
-  display.setTextSize (1);
-  display.print ("Hello !");
-  display.display ();                      
-
-  // init GPIO
+  // Init GPIO
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(MOTOR1_STEP_ENA, OUTPUT);
   pinMode(MOTOR1_STEP_CLK, OUTPUT);
@@ -261,6 +194,23 @@ void setup(){
   pinMode(WINDER_MAX_PIN,INPUT);
   pinMode(WINDER_MIN_PIN,INPUT);
   pinMode(FAN_PIN, OUTPUT);
+  pinMode(clkPin,INPUT);
+  pinMode(dtPin,INPUT);
+  pinMode(swPin,INPUT_PULLUP);
+
+  // Init screen
+  display.begin(0X3C, true);
+  display.clearDisplay();
+  display.display ();
+  display.drawPixel(10, 10, SH110X_WHITE);
+  for (int x = 8; x < 120; x++)
+    display.drawPixel(x, 20, SH110X_WHITE);
+  display.fillRect (24, 24, 64, 64, SH110X_WHITE);
+  display.setCursor (24, 2);
+  display.setTextColor (SH110X_WHITE);
+  display.setTextSize (1);
+  display.print ("Hello !");
+  display.display ();                      
 
   // Turn on the fan ramp
   digitalWrite(FAN_PIN, HIGH);
@@ -271,30 +221,35 @@ void setup(){
   digitalWrite(MOTOR1_STEP_ENA, LOW);  // Enable the driver
   digitalWrite(MOTOR2_STEP_ENA, LOW);  // Enable the driver
 
-  // initialise le codeur rotatif
-  initRotary ();
-
-  // initialise le moteur position
+  // Init the slider motor
   stepper = AccelStepper (AccelStepper::DRIVER, MOTOR3_STEP_CLK, MOTOR3_STEP_DIR, 0, 0, true);
   stepper.setEnablePin (MOTOR3_STEP_ENA);
   stepper.setPinsInverted(false, false, true ); // (dir,step,enable)
   stepper.enableOutputs ();
   stepper.setMaxSpeed(20000.0);
   stepper.setAcceleration(8000.0);
+
+  // Init rotary encoder
+  encoder = new RotaryEncoder(clkPin, dtPin, RotaryEncoder::LatchMode::FOUR0);
+  attachInterrupt(digitalPinToInterrupt(clkPin), checkPosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(dtPin), checkPosition, CHANGE);
 }
 
 uint32_t time_display = 0;
 
 void loop(){
+  // Turn on the arduino led
   digitalWrite(LED_BUILTIN, HIGH);
+
+  // Read encoder position
   encoder->tick();
 
   int valencoder = encoder->getPosition ();
 
   if (valencoder < 0)
-    valencoder =0;
+    valencoder = 0;
   if(valencoder > maxrotary)  
-    valencoder =maxrotary;
+    valencoder = maxrotary;
     
   int spd = map(valencoder, minrotary, maxrotary, 1, motorSpeed);
   
@@ -305,25 +260,28 @@ void loop(){
     Serial.print (" ");
     Serial.println (spd);
   #endif
+
+  // Speed of the first two motors
+  motorRPM(spd);  // Puller motor1 according to the rotary encoder
+  motor2RPM(winder_speed);  // Winder motor2 according to the filament position
   
-  // vitesse des 2 premiers moteurs
-  motorRPM(spd);  // moteur1 en fonction du pontentiometre
-  motor2RPM(winder_speed);  // moteur2 a vitesse fixe
-  
-  
+  // Run motors with timer interrupts, puller motor1 and winder motor2
   stepMotor(+6400 * 2); // Positive for forward movement  400 steps * 16 microsteps
   stepMotor2(-6400 * 2); // Positive for forward movement  400 steps * 16 microsteps
-      
+
+  // Manage the position of slider (motor3) in terms of winder (moteur2)
   HandleMotor3();
 
-  //get winder speed
+  // Get winder speed
   HandleWinderSpeed();
-    
-  stepper.run ();
-  
-  digitalWrite(LED_BUILTIN, LOW);
-  //delay(100);
 
+  // Run slider motor
+  stepper.run ();
+
+  // Turn off the arduino led
+  digitalWrite(LED_BUILTIN, LOW);
+  
+  // Screen refresh
   if(millis () - time_display > 200){
     uint32_t speedmm = (156 / (64 /spd))*60;  
     display.clearDisplay();
