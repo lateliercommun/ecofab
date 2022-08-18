@@ -1,5 +1,5 @@
 # ecofab
-ecofab : opensource filament extruder
+opensource filament extruder
 
 Arduino 2560 + Ramps 1.4  Firmware 
 
