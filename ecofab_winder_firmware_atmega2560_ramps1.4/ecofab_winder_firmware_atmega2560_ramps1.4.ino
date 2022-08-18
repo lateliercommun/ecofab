@@ -61,8 +61,8 @@ Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 
 #define TIMER_2_MAX         0xFFFF - ( CPU_MHZ / PRESCALER / (STEPS_PER_REV * MICROSTEPS_PER_STEP * MAX_RPM / 60L) )
 
 // Parameters for motors with interrupt
-#define WINDER_MIN_SPEED 1
-#define WINDER_MAX_SPEED 20
+#define WINDER_MIN_SPEED 2 // default 1
+#define WINDER_MAX_SPEED 10 // default 20
 #define MAX_MOTOR3_POSITION 4000
 #define MOTOR2_STEP_PER_TURN (200 * 2 * 32)
 #define MOTOR3_STEP ((200 * 32) /8)
