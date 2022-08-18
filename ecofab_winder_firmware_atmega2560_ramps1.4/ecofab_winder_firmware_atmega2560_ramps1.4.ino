@@ -72,9 +72,9 @@ unsigned int timer2_counter = 1;
 volatile unsigned int new_counter = 1;
 volatile unsigned int new_counter2 = 1;
 volatile int  steps = 0;    // Changes outside of interrupt handler, so make it volatile
-volatile int  steps2 = 0;    // Changes outside of interrupt handler, so make it volatile
-volatile bool done = true; // Used outside interrupt handler, so make it volatile
-volatile bool done2 = true; // Used outside interrupt handler, so make it volatile
+volatile int  steps2 = 0;   // Changes outside of interrupt handler, so make it volatile
+volatile bool done = true;    // Used outside interrupt handler, so make it volatile
+volatile bool done2 = true;   // Used outside interrupt handler, so make it volatile
 volatile uint32_t motor2_step = 0;
 int8_t motor3_dir = 1;   // direction du moteur3
 long motor3_position = 0;
@@ -142,7 +142,7 @@ int readRotary()
 
 uint32_t timewinder = 0;
 
-// Function that manages the speed of winder motor2
+// Function that manages the speed of winder (motor2)
 void HandleWinderSpeed()
 {
   if(millis ()- timewinder > 10)
@@ -298,10 +298,10 @@ void loop()
   #endif
   
   // Speed of the first two motors
-  motorRPM(spd);  // Puller motor1 according to the rotary encoder
-  motor2RPM(winder_speed);  // Winder motor2 according to the filament position
+  motorRPM(spd);  // Puller (motor1) according to the rotary encoder
+  motor2RPM(winder_speed);  // Winder (motor2) according to the filament position
   
-  // Run motors with timer interrupts, puller motor1 and winder motor2
+  // Run motors with timer interrupts, puller motor1 and winder (motor2)
   stepMotor(+6400 * 2); // Positive for forward movement  400 steps * 16 microsteps
   stepMotor2(-6400 * 2); // Positive for forward movement  400 steps * 16 microsteps
 
